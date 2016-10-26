@@ -859,14 +859,17 @@ export class CreateProjectController {
         case 'stack-library':
           source = this.getSourceFromStack(this.stackLibraryUser);
           break;
-        case 'custom-stack':
+        case 'stack-import':
           source.type = 'environment';
           source.format = this.recipeFormat;
           if (this.recipeUrl && this.recipeUrl.length > 0) {
             source.location = this.recipeUrl;
-          } else {
-            source.content = this.recipeScript;
           }
+          break;
+        case 'stack-authoring':
+          source.type = 'environment';
+          source.format = this.recipeFormat;
+          source.content = this.recipeScript;
           break;
       }
       this.createWorkspace(source);
@@ -1097,7 +1100,7 @@ export class CreateProjectController {
   }
 
   setStackTab(stackTab) {
-    this.isCustomStack = stackTab === 'custom-stack';
+    this.isCustomStack = (stackTab === 'stack-import' || stackTab === 'stack-authoring');
     this.stackTab = stackTab;
   }
 
@@ -1144,17 +1147,78 @@ export class CreateProjectController {
       this.readyToGoStack = angular.copy(stack);
     } else if (this.stackTab === 'stack-library') {
       this.stackLibraryUser = angular.copy(stack);
+    } else if (this.stackTab === 'config') {
+      this.isWorkspaceConfig = true;
+      // get workspace name from config
+      if (stack) {
+        this.stackFromConfig = angular.copy(stack);
+        this.workspaceName = this.stackFromConfig.workspaceConfig.name;
+        delete this.stackMachines[this.stackFromConfig.id];
+      }
     }
     this.updateCurrentStack(stack);
     this.updateWorkspaceStatus(false);
   }
 
+  /**
+   * Changes workspace name in workspace config provided by user
+   *
+   * @param form
+   */
+  workspaceNameChange(form) {
+    if (!this.isWorkspaceConfig || form.$invalid || !(this.stackFromConfig && this.stackFromConfig.workspaceConfig)) {
+      return;
+    }
+
+    this.stackFromConfig.workspaceConfig.name = this.workspaceName;
+    this.broadcastConfigChanges();
+  }
+
+  /**
+   * Changes workspace RAM in workspace config provided by user
+   *
+   * @param machineName
+   * @param machineRam
+   */
+  workspaceRamChange(machineName, machineRam) {
+    if (!this.isWorkspaceConfig || !(this.stackFromConfig && this.stackFromConfig.workspaceConfig)) {
+      return;
+    }
+
+    try {
+      let config = this.stackFromConfig.workspaceConfig,
+          machines = config.environments[config.defaultEnv].machines;
+      if (machines[machineName]) {
+        machines[machineName].attributes.memoryLimitBytes = machineRam;
+      } else {
+        machines[machineName] = {
+          attributes: {
+            memoryLimitBytes: machineRam
+          }
+        };
+      }
+      this.broadcastConfigChanges();
+    } catch (e) {
+      this.$log.error('Cannot set memory limit for "' + machineName + '"', e);
+    }
+
+  }
+
+  /**
+   * Broadcasts event to update workspace config in stack selector
+   */
+  broadcastConfigChanges() {
+    this.$scope.$broadcast('workspaceConfigEvent:workspaceConfig', this.stackFromConfig.workspaceConfig);
+  }
+
   updateWorkspaceStatus(isExistingWorkspace) {
     if (isExistingWorkspace) {
       this.stackLibraryOption = 'existing-workspace';
+      this.existingWorkspaceName = this.workspaceSelected.config.name;
     } else {
       this.stackLibraryOption = 'new-workspace';
       this.generateWorkspaceName();
+      this.existingWorkspaceName = '';
     }
     this.$rootScope.$broadcast('chePanel:disabled', {id: 'create-project-workspace', disabled: isExistingWorkspace});
   }
