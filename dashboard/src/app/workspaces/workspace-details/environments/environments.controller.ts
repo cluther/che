@@ -36,6 +36,7 @@ export class WorkspaceEnvironmentsController {
     onLoad: Function
   };
 
+  workspaceName: string;
   workspaceConfig: any;
   environment: any;
   environmentName: string;
@@ -71,9 +72,7 @@ export class WorkspaceEnvironmentsController {
     }, () => {
       if (this.workspaceConfig &&
         this.workspaceConfig.environments &&
-        this.workspaceConfig.environments[this.environmentName] &&
-        this.workspaceConfig.environments[this.environmentName].recipe &&
-        this.workspaceConfig.environments[this.environmentName].recipe.type) {
+        this.workspaceConfig.environments[this.environmentName]) {
         this.init();
       }
     });
@@ -85,6 +84,13 @@ export class WorkspaceEnvironmentsController {
   init(): void {
     this.newEnvironmentName = this.environmentName;
     this.environment = this.workspaceConfig.environments[this.environmentName];
+
+    if (!this.environment.recipe) {
+      this.machines = [];
+      delete this.devMachineName;
+      delete this.machinesViewStatus[this.environmentName];
+      return;
+    }
 
     this.recipeType = this.environment.recipe.type;
     this.environmentManager = this.cheEnvironmentRegistry.getEnvironmentManager(this.recipeType);
@@ -232,14 +238,13 @@ export class WorkspaceEnvironmentsController {
   changeWorkspaceStack(config: any): void {
     this.workspaceConfig = config;
 
-    if (!this.environmentName) {
+    if (!this.environmentName || this.environmentName !== config.defaultEnv) {
       this.environmentName = config.defaultEnv;
       this.newEnvironmentName = this.environmentName;
-    } else if (this.newEnvironmentName !== config.defaultEnv) {
-      this.workspaceConfig.environments[this.newEnvironmentName] = this.workspaceConfig.environments[config.defaultEnv];
-      delete this.workspaceConfig.environments[config.defaultEnv];
+    }
 
-      this.workspaceConfig.defaultEnv = this.newEnvironmentName;
+    if (this.workspaceName !== config.name) {
+      this.workspaceName = config.name;
     }
 
     // for compose recipe
@@ -263,8 +268,6 @@ export class WorkspaceEnvironmentsController {
 
       this.workspaceConfig.environments[this.environmentName] = environmentManager.getEnvironment(environment, machines);
     }
-
-    this.machinesViewStatus = {};
   }
 
   /**

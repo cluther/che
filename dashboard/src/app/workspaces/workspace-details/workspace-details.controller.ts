@@ -44,16 +44,16 @@ export class WorkspaceDetailsController {
   isCreationFlow: boolean = true;
   selectedTabIndex: number;
 
-  namespace: string;
-  workspaceId: string;
-  workspaceName: string;
-  newName: string;
-  stack: any;
+  namespace: string = '';
+  workspaceId: string = '';
+  workspaceName: string = '';
+  newName: string = '';
+  stack: any = {};
   workspaceDetails: any = {};
   copyWorkspaceDetails: any = {};
   machinesViewStatus: any = {};
-  errorMessage: string;
-  invalidWorkspace: string;
+  errorMessage: string = '';
+  invalidWorkspace: string = '';
   editMode: boolean = false;
   showApplyMessage: boolean = false;
 
@@ -137,6 +137,7 @@ export class WorkspaceDetailsController {
       this.isCreationFlow = true;
       this.namespace = '';
       this.workspaceName = this.generateWorkspaceName();
+      this.workspaceDetails = {config: {}};
       this.copyWorkspaceDetails = {config: {}};
     }
     this.newName = this.workspaceName;
@@ -187,7 +188,7 @@ export class WorkspaceDetailsController {
    * @returns {boolean}
    */
   isNameChanged(): boolean {
-    if (this.workspaceDetails && this.workspaceDetails.config) {
+    if (this.newName && this.workspaceDetails && this.workspaceDetails.config) {
       return this.workspaceDetails.config.name !== this.newName;
     }
     return false;
@@ -196,16 +197,18 @@ export class WorkspaceDetailsController {
   /**
    * Updates name of workspace in config.
    *
-   * @param isFormValid {boolean}
+   * @param form {any}
    */
-  updateName(isFormValid: boolean): void {
-    if (isFormValid === false || !this.isNameChanged()) {
+  updateName(form: any): void {
+    if (form.$invalid || !this.isNameChanged()) {
       return;
     }
 
     this.copyWorkspaceDetails.config.name = this.newName;
 
-    if (!this.isCreationFlow) {
+    if (this.isCreationFlow) {
+      this.broadcastConfigChanges();
+    } else {
       this.doUpdateWorkspace();
     }
   }
@@ -240,7 +243,9 @@ export class WorkspaceDetailsController {
    * @returns {ng.IPromise<any>}
    */
   updateWorkspaceConfig(): ng.IPromise<any> {
-    if (!this.isCreationFlow) {
+    if (this.isCreationFlow) {
+      this.broadcastConfigChanges();
+    } else {
       this.editMode = !angular.equals(this.copyWorkspaceDetails.config, this.workspaceDetails.config);
 
       let status = this.getWorkspaceStatus();
@@ -254,6 +259,10 @@ export class WorkspaceDetailsController {
     let defer = this.$q.defer();
     defer.resolve();
     return defer.promise;
+  }
+
+  broadcastConfigChanges() {
+    this.$scope.$broadcast('workspaceConfigEvent:workspaceConfig', this.copyWorkspaceDetails.config);
   }
 
   /**

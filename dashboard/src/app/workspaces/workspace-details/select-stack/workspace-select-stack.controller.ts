@@ -75,12 +75,14 @@ export class WorkspaceSelectStackController {
     this.tabName = tabName;
     this.onTabChange({tabName: tabName});
 
-    if (tabName === 'ready-to-go') {
+    if (tabName === 'ready-to-go' && this.readyToGoStack) {
       this.onStackSelect(this.readyToGoStack);
       return;
-    } else if (tabName === 'stack-library') {
+    } else if (tabName === 'stack-library' && this.stackLibraryUser) {
       this.onStackSelect(this.stackLibraryUser);
       return;
+    } else if (tabName === 'config') {
+      this.workspaceConfigOnChange(null);
     }
     this.onStackSelect(null);
   }
@@ -93,4 +95,27 @@ export class WorkspaceSelectStackController {
     this.stack = stack;
     this.onStackChange({stack: stack});
   }
+
+  /**
+   * Callback which is called on workspace config change.
+   *
+   * @param config {Object}
+   */
+  workspaceConfigOnChange(config: any): void {
+    if (!config) {
+      this.onStackSelect(null);
+      return;
+    }
+
+    let stack = {
+      id: 'importWorkspaceConfig',
+      source: {
+        origin: 'codenvy/ubuntu_jdk8',
+        type: 'image'
+      },
+      workspaceConfig: config
+    };
+    this.onStackSelect(stack);
+  }
+
 }

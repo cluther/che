@@ -11,21 +11,21 @@
 'use strict';
 
 /**
- * Defines a directive for displaying stacks tab.
+ * Defines a directive for displaying config import widget.
  * @author Oleksii Kurinnyi
  */
-export class WorkspaceStacks {
+export class WorkspaceConfigImport {
   restrict: string = 'E';
-  templateUrl: string = 'app/workspaces/workspace-details/workspace-stacks/workspace-stacks.html';
+  templateUrl: string = 'app/workspaces/workspace-details/select-stack/config-import/workspace-config-import.html';
   replace: boolean = false;
 
-  controller: string = 'WorkspaceStacksController';
-  controllerAs: string = 'workspaceStacksController';
+  controller: string = 'WorkspaceConfigImportController';
+  controllerAs: string = 'workspaceConfigImportController';
 
   bindToController: boolean = true;
 
   scope: {
-    [propName: string]: string
+    [paramName: string]: string;
   };
 
   /**
@@ -35,11 +35,8 @@ export class WorkspaceStacks {
   constructor() {
     // scope values
     this.scope = {
-      workspaceName: '=',
-      environmentName: '=',
-      workspaceStackOnChange: '&'
+      workspaceConfigOnChangeCallback: '&cheWorkspaceConfigOnChange'
     };
   }
 
 }
-

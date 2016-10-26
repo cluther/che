@@ -44,7 +44,7 @@
                            che-place-holder="Name of the workspace"
                            aria-label="Name of the workspace"
                            ng-model="workspaceDetailsController.newName"
-                           ng-change="workspaceDetailsController.updateName(workspaceNameForm.$valid)"
+                           ng-change="workspaceDetailsController.updateName(workspaceNameForm)"
                            ng-model-options="{ updateOn: 'default blur', debounce: { 'default': 2000, 'blur': 0 } }"
                            required
                            unique-workspace-name="workspaceDetailsController.workspaceName"

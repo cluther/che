@@ -23,16 +23,21 @@ import {CheEnvironmentRegistry} from '../../../../components/api/environment/che
 const DEFAULT_WORKSPACE_RAM: number = 2 * Math.pow(1024, 3);
 
 export class WorkspaceStacksController {
+  $log: ng.ILogService;
   $scope: ng.IScope;
   cheWorkspace: CheWorkspace;
   composeEnvironmentManager: ComposeEnvironmentManager;
 
+  tabName: string;
+
+  isCustomStack: boolean = false;
   recipeUrl: string;
   recipeScript: string;
-  recipeFormat: string;
+  recipeFormat: string = 'compose';
+
+  isWorkspaceConfig: boolean = false;
 
   stack: any = null;
-  isCustomStack: boolean = false;
   selectSourceOption: string;
 
   workspaceName: string;
@@ -42,7 +47,8 @@ export class WorkspaceStacksController {
    * Default constructor that is using resource
    * @ngInject for Dependency injection
    */
-  constructor($scope: ng.IScope, cheWorkspace: CheWorkspace, cheEnvironmentRegistry: CheEnvironmentRegistry) {
+  constructor($log: ng.ILogService, $scope: ng.IScope, cheWorkspace: CheWorkspace, cheEnvironmentRegistry: CheEnvironmentRegistry) {
+    this.$log = $log;
     this.cheWorkspace = cheWorkspace;
     this.composeEnvironmentManager = cheEnvironmentRegistry.getEnvironmentManager('compose');
 
@@ -69,17 +75,29 @@ export class WorkspaceStacksController {
    * @param tabName {string} the select tab name
    */
   setStackTab(tabName: string): void {
-    if (tabName !== 'stack-import' && tabName !== 'stack-authoring') {
-      return;
-    }
-
-    if (tabName === 'stack-import') {
+    this.tabName = tabName;
+    if (tabName === 'stack-import' || tabName === 'stack-authoring') {
+      this.isWorkspaceConfig = false;
+      if (tabName === 'stack-import') {
+        this.recipeScript = null;
+      } else {
+        this.recipeUrl = null;
+      }
+      this.isCustomStack = true;
+      this.cheStackLibrarySelecter(null);
+    } else if (tabName === 'config') {
+      // config import
+      this.isWorkspaceConfig = true;
+      this.isCustomStack = false;
       this.recipeScript = null;
+      this.recipeUrl = null;
     } else {
+      // ready-to-go, stack library
+      this.isWorkspaceConfig = false;
+      this.isCustomStack = false;
+      this.recipeScript = null;
       this.recipeUrl = null;
     }
-    this.cheStackLibrarySelecter(null);
-    this.isCustomStack = true;
   }
 
   /**
@@ -88,15 +106,15 @@ export class WorkspaceStacksController {
    * @param stack {object} the selected stack
    */
   cheStackLibrarySelecter(stack: any): void {
-    if (stack) {
-      this.isCustomStack = false;
-      this.recipeUrl = null;
-      this.recipeScript = null;
-    }
-    this.stack = stack;
+    let workspaceName = this.workspaceName;
 
-    let source = this.getSource();
-    let config = this.buildWorkspaceConfig(source);
+    if (this.isWorkspaceConfig && stack && stack.workspaceConfig) {
+      workspaceName = stack.workspaceConfig.name;
+    }
+    this.stack = angular.copy(stack);
+
+    let source = this.getSource(),
+        config = this.buildWorkspaceConfig(source, workspaceName);
 
     if (!config.defaultEnv || (!this.stack && !this.recipeFormat)) {
       return;
@@ -108,10 +126,11 @@ export class WorkspaceStacksController {
   /**
    * Builds workspace config.
    *
-   * @param source
+   * @param source {object}
+   * @param workspaceName {string}
    * @returns {config}
    */
-  buildWorkspaceConfig(source: any): any {
+  buildWorkspaceConfig(source: any, workspaceName: string): any {
     let stackWorkspaceConfig;
     if (this.stack) {
       stackWorkspaceConfig = this.stack.workspaceConfig;
@@ -119,15 +138,14 @@ export class WorkspaceStacksController {
       let machines    = this.composeEnvironmentManager.getMachines({recipe: source}),
           environment = this.composeEnvironmentManager.getEnvironment({recipe: source}, machines);
       stackWorkspaceConfig = {
-        defaultEnv: this.workspaceName,
+        defaultEnv: workspaceName,
         environments: {
-          [this.workspaceName]: environment
+          [workspaceName]: environment
         }
       };
     }
 
-
-    return this.cheWorkspace.formWorkspaceConfig(stackWorkspaceConfig, this.workspaceName, source, DEFAULT_WORKSPACE_RAM);
+    return this.cheWorkspace.formWorkspaceConfig(stackWorkspaceConfig, workspaceName, source, DEFAULT_WORKSPACE_RAM);
   }
 
   /**
