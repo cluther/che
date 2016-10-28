@@ -21,6 +21,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.SshTransport;
+import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.TransportHttp;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.mockito.ArgumentCaptor;
@@ -41,7 +42,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.Assert.assertEquals;
 
 /**
  * Test class for {@link JGitConnection}
@@ -133,6 +134,9 @@ public class JGitConnectionTest {
     @Test
     public void shouldDoNothingWhenTransportHttpReceived() throws Exception{
         //given
+        // Сreate mock for parent class of the {@link TransportHttp} to prevent wrong initialization
+        // of real TransportHttp object in other tests(https://github.com/eclipse/che/issues/2888)
+        mock(Transport.class);
         TransportHttp transportHttp = mock(TransportHttp.class);
         when(sshKeyProvider.getPrivateKey(anyString())).thenReturn(new byte[0]);
         doAnswer(invocation -> {
