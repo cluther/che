@@ -100,8 +100,8 @@ public class JGitConnectionTest {
         UsernamePasswordCredentialsProvider credentialsProvider = captor.getValue();
         String username = (String)usernameField.get(credentialsProvider);
         char[] password = (char[])passwordField.get(credentialsProvider);
-        assertEquals("username", username);
-        assertEquals("password", String.valueOf(password));
+        assertEquals(username, "username");
+        assertEquals(String.valueOf(password), "password");
     }
 
     @Test(dataProvider = "gitUrlsWithoutOrWrongCredentials")
@@ -165,6 +165,6 @@ public class JGitConnectionTest {
         when(ref.getName()).thenReturn(branchTest);
         String branchName = jGitConnection.getCurrentBranch();
 
-        assertEquals(branchTest, branchName);
+        assertEquals(branchName, branchTest);
     }
 }
